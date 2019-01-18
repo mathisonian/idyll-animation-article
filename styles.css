@@ -1,0 +1,50 @@
+
+
+.idyll-root {
+  padding-top: 0;
+}
+
+button {
+  display: block;
+  margin: 1em auto;
+}
+
+h1, h2, h3, h4, h5 {
+  border-bottom: none;
+}
+
+pre {
+  max-width: 960px;
+  margin: 2em auto;
+}
+
+h1.hed {
+  font-size: 4em;
+  margin-top: 0;
+}
+
+h2.dek {
+  font-size: 2em;
+}
+
+.article-header {
+  text-align: center;
+  background: #222;
+  color: white;
+  /* border-bottom: solid 1px #ddd; */
+  padding: 8em 0 4em 0;
+  margin-bottom: 4em;
+
+}
+
+.article-header a {
+  color: white;
+  text-decoration: underline;
+}
+
+@media all and (max-width: 1000px) {
+  .idyll-root {
+    max-width: none;
+    padding: 0;
+  }
+}

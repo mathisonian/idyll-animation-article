@@ -1,0 +1,288 @@
+[meta title:"Animation Example" description:"Short description of your project" /]
+
+[Header
+  fullWidth:true
+  title:"Animating with Idyll"
+  subtitle:"How to use CSS animations and custom tweening to animate elements."
+  date:"January 17, 2019"
+  author:"Matthew Conlen"
+  authorLink:"https://twitter.com/mathisonian" /]
+
+
+I'm creating this example in response to a [post on twitter](https://twitter.com/pbalciunas/status/1085064070934474753)
+that asked about how to animate elements with [Idyll](https://idyll-lang.org). This article is a little longer than I originally intended it to be,
+but hopefully it sheds some light on the different ways that Idyll can be used to animate and add interactivity to articles.
+
+
+## A Quick Overview of Idyll Variables
+
+Idyll provides a [reactive variable system](https://idyll-lang.org/docs/syntax#variables) that can be used to parameterize any properties of the components
+that make up an article. For example, you could use an Idyll variable to control the background color of a `div`:
+
+[var name:"divBackground" value:`[0, 0, 0]` /]
+[div style:`{ background: "rgb(" + divBackground.join(',') + ")", width: 50, height: 50, margin: '0 auto' }` /]
+
+[Button onClick:`divBackground = [255 * Math.random(), 255 * Math.random(), 255 * Math.random()]` ]
+  Randomize color
+[/Button]
+
+The interactivity above is acheived with this Idyll markup:
+
+[FullWidth]
+```
+[var name:"divBackground" value:`[0, 0, 0]` /]
+
+[div style:`{
+  background: "rgb(" + divBackground.join(',') + ")",
+  width: 50,
+  height: 50
+}` /]
+
+[Button onClick:`divBackground = [255 * Math.random(), 255 * Math.random(), 255 * Math.random()]` ]
+  Randomize color
+[/Button]
+```
+[/FullWidth]
+
+Let's walk through that. First, a variable called `divBackground` is instantiated, with an initial value of `[0, 0, 0]`.
+The next line adds a `div` element to the page, and gives it a custom inline-CSS style. Because the value of the style property is surrounded by backticks, it is interpreted as a JavaScript expression. The previously declared
+`divBackground` can be referenced in this expression, allowing for the color to dynamically update anytime that variable changes. Finally, a `button` is added to the page, with a custom click handler that randomizes the
+value of `divBackground` when the button is clicked.
+
+You'll notice is that there is no smooth animation here: as soon as the `divBackground` variable is set to a new value,
+the `div` on the screen immediately updates with a new background color to reflect that. This makes it easy to reason about
+how the article is going to look given any given state of variables, but begs the question of how to add animation.
+
+
+## First Strategy - CSS Animations
+
+The first strategy is to rely on [CSS to handle the animations](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Animations/Using_CSS_animations). This is often a good approach because it allows the animation and re-rendering logic to be pushed down
+into the browser where hardware acceleration can often be applied to acheive great performance. Let's see how this would work with the simple colored square example.
+
+[var name:"animatedDivBackground" value:`[0, 0, 0]` /]
+[var name:"animationDuration" value:250 /]
+
+[div style:`{ background: "rgb(" + animatedDivBackground.join(',') + ")", width: 50, height: 50, margin: '0 auto', transition: 'background ' + animationDuration + 'ms' }` /]
+
+[Button onClick:`animatedDivBackground = [255 * Math.random(), 255 * Math.random(), 255 * Math.random()]` ]
+  Randomize color
+[/Button]
+
+An Idyll variable can even be used to control the duration of the animation. Drag the slider below, and see how
+this affects changing the color of the square.
+
+[div style:`{textAlign: 'center'}`]
+  Animation Duration (ms): [Display value:animationDuration format:"d" /][br/]
+  [Range value:animationDuration min:0 max:5000 /]
+[/div]
+
+
+[FullWidth]
+```
+[var name:"animatedDivBackground" value:`[0, 0, 0]` /]
+[var name:"animationDuration" value:250 /]
+
+[div style:`{
+  background: "rgb(" + animatedDivBackground.join(',') + ")",
+  width: 50,
+  height: 50,
+  transition: 'background ' + animationDuration + 'ms'
+}` /]
+
+[Button onClick:`animatedDivBackground = [255 * Math.random(), 255 * Math.random(), 255 * Math.random()]` ]
+  Randomize color
+[/Button]
+
+Animation Duration (ms): [Display value:animationDuration /]
+[Range value:animationDuration min:0 max:5000 /]
+```
+[/FullWidth]
+
+The main difference between the code for this example and the previous one, is the inclusion of the `transition` property in the style object.
+In CSS, the transition property is used to describe how other properties should animate when updated. For example `transition: background 250ms`
+means that when the value of `background` changes there should be a smooth visual transition to the new value that takes 250 milliseconds (a quarter of a second)
+to complete.
+
+
+This strategy isn't limited to colors. The same idea can be applied to almost any CSS property. Let's use it to animate the position of a `div` on the screen. Click the button
+below to add a free-floating `div` to the bottom right of the screen.
+
+[var name:"showDiv" value:false /]
+
+[var name:"divPosition" value:"bottom-right"  /]
+[derived name:"positions" value:`{
+  top: divPosition.indexOf('top') > -1 ? 20 : 'calc(100vh - 70px)',
+  left: divPosition.indexOf('left') > -1 ? 20 : 'calc(100vw - 70px)'
+}` /]
+
+[Button onClick:`showDiv = true `]
+  Show div
+[/Button]
+
+The element has been added to the screen using the CSS rule `position: fixed` so that its position is independent of the
+flow of the rest of the content on the page, and we can move it to arbitrary positions. Click the button below to randomly move
+the element to a different corner of the screen.
+
+[var name:"possiblePositions" value:`['top-left', 'bottom-left', 'top-right', 'bottom-right']` /]
+[Button onClick:`divPosition = possiblePositions.filter(x => x !== divPosition)[Math.round(2 * Math.random())] `]
+  Randomize position
+[/Button]
+
+Current position: [display value:`showDiv ? divPosition.split('-').join(' ') : 'hidden' ` /]
+
+[div style:`{
+  position: 'fixed',
+  width: 50,
+  height: 50,
+  left: positions.left,
+  top: positions.top,
+  background: 'black',
+  opacity: showDiv ? 1 : 0,
+  transition: 'all 1000ms'
+}` /]
+
+This is achieved using the same logic that we applied to animate the background color of the square above. First, some variables are defined that will determine the position of the square:
+
+[FullWidth]
+```
+[var name:"divPosition" value:"bottom-right"  /]
+
+[derived name:"positions" value:`{
+  top: divPosition.indexOf('top') > -1 ? 20 : 'calc(100vh - 70px)',
+  left: divPosition.indexOf('left') > -1 ? 20 : 'calc(100vw - 70px)'
+}` /]
+```
+[/FullWidth]
+
+The `divPosition` variable is a string that represents the current location of the square, e.g. `top-left`, `bottom-right`, and so on. Positions is a `derived` variable that is calculated based on the current value of `divPosition`. It determines the exact coordinates to be applied to the top left corner of the square. For example, if the `divPosition` variable is set to `top-left`, the value of `positions` will be `{ top: 20, left: 20 }`; if the position is `bottom-right`, `positions` will take on the value `{ top: 'calc(100vh - 70px)', left: 'calc(100vw - 70px)' }.
+
+Note that we just define `left` and `top` here and omit `right` and `bottom` because that makes the task of animating easier. To make the button that randomizes the position work as expected, we again use a custom expression in the `onClick` handler to randomly select a new position:
+
+[FullWidth]
+```
+[var name:"possiblePositions" value:`['top-left', 'bottom-left', 'top-right', 'bottom-right']` /]
+[Button onClick:`
+  divPosition = possiblePositions.filter(x => x !== divPosition)[Math.round(2 * Math.random())] `]
+  Randomize position
+[/Button]
+```
+[/FullWidth]
+
+Finally, the `div` needs to be drawn to the screen:
+
+[FullWidth]
+```
+[div style:`{
+  position: 'fixed',
+  width: 50,
+  height: 50,
+  left: positions.left,
+  top: positions.top,
+  background: 'black',
+  opacity: showDiv ? 1 : 0,
+  transition: 'all 1000ms'
+}` /]
+```
+[/FullWidth]
+
+Note that this concept of using CSS to animate properties isn't limited to background color or an element's fixed position. This is a generally useful pattern that can be used with almost any CSS property and combines very nicely with Idyll's variable system.
+
+## Second Strategy - Custom Tweening Functions
+
+There are certain cases where using CSS animations isn't an option. Perhaps animations aren't supported for the property that you want to animate, or maybe you just want more direct control over the animated transition. In those cases we can supply a custom tweening function via Idyll's context API to create custom animations using JavaScript.
+
+Let's look at an example using SVG, and then we'll break down how it works.
+
+[var name:"cx" value:400 /]
+[var name:"cy" value:200 /]
+[var name:"r" value:10 /]
+[svg fullWidth:true width:800 height:400 style:`{width: '100%', background: '#222'}` ]
+  [circle  r:r cx:cx cy:cy fill:"#fff" /]
+[/svg]
+
+
+[Button onClick:`animate('cx', Math.random() * 800, 250); animate('cy', Math.random() * 400, 250)` ]
+  Move circle
+[/Button]
+
+[Button onClick:`animate('r', 3 + Math.random() * 20)` ]
+  Resize circle
+[/Button]
+
+The SVG scene is defined with the following code. It should look familiar based on what you've seen above: SVG elements are added to the page, with certain properties being parameterized by Idyll variables. In this case we're parameterizing the size and location of the circle.
+
+[FullWidth]
+```
+[var name:"cx" value:400 /]
+[var name:"cy" value:200 /]
+[var name:"r" value:10 /]
+
+[svg fullWidth:true width:800 height:400 style:`{width: '100%', background: '#222'}` ]
+  [circle  r:r cx:cx cy:cy fill:"#fff" /]
+[/svg]
+```
+[/FullWidth]
+
+Then we add two buttons, each with a custom `onClick` expression that specifies what happens when the button is pressed.
+
+
+[FullWidth]
+```
+[Button onClick:`animate('cx', Math.random() * 800, 250); animate('cy', Math.random() * 400, 250)` ]
+  Move circle
+[/Button]
+
+[Button onClick:`animate('r', 3 + Math.random() * 20)` ]
+  Resize circle
+[/Button]
+```
+[/FullWidth]
+
+Note that the difference here is that now we're calling a function, `animate()`, instead of directly setting a value for that variable. The animate function takes three parameters: the name of the variable to be updated, the new value, and the duration of the transition.
+
+Where does the `animate` function come from? It isn't built into Idyll, instead I've used the context API to create this custom function and allow it to be used in expressions. Here's the code that creates that function and injects it for use:
+
+```js
+import TWEEN from 'tween.js';
+
+module.exports = (ctx) => {
+  // Wait for the context to initialize
+  ctx.onInitialize(() => {
+
+    // Inject the animation function
+    ctx.update({
+       animate: (key, value, time) => {
+          let _tween = { value : ctx.data()[key] };
+          new TWEEN.Tween(_tween)
+            .to({value: value}, time)
+            .easing(TWEEN.Easing.Quadratic.InOut)
+            .onUpdate(() => {
+              const updated = {};
+              updated[key] = _tween.value;
+              ctx.update(updated);
+            }).start();
+       }
+    })
+
+    // Enable tween to update variable values
+    // on each animation frame.
+    const listenForAnimations = () => {
+      const update = TWEEN.update();
+      requestAnimationFrame(animate);
+    };
+    listenForAnimations();
+  })
+}
+```
+
+In this case I'm using the JavaScript library [tween.js](https://github.com/tweenjs/tween.js/) to do most of the heavy lifting. The main responsibility of this code is to create our new function `animate`, and inject it into Idyll's runtime context so that it can be used in expressions in the Idyll markup. By calling `ctx.update({ animate: ... })` we are defining that function and exposing it for use.
+
+The details of how that function works are particular to tween.js in this case, but the basic idea is that whenever the function is called (as it is called when you press the buttons above to animate the circle), tween will calculate all the intermediate values that that variable should take on, and update the value of the variable with those intermediate values on each animation frame. This code is pretty general purpose, so feel to take it or modify it for use in your own Idyll projects.
+
+## Conclusion
+
+This article discussed two different strategies for specifying animations using Idyll. Each of the two strategies have their pros and cons, so you should evaluate what is appropriate for you depending on your restrictions and requirements. If you are doing complex animations that require manipulating many data points, you might look into using Idyll with [D3](https://idyll-lang.github.io/idyll-d3-component/) (for manipulating SVGs) or [REGL](https://idyll-lang.github.io/idyll-regl-component/) (to use WebGL).
+
+If there are questions about any of the details of this article, feel free to reach out on twitter to [@idyll_lang](https://twitter.com/idyll_lang) or [@mathisonian](https://twitter.com/mathisonian), open an issue on [GitHub](https://github.com/idyll-lang/idyll), or join our [chatroom on Gitter](https://gitter.im/idyll-lang/).
+
+The code for this article is [available on GitHub](https://github.com/mathisonian/idyll-animation-article).

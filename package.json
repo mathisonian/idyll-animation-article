@@ -1,0 +1,21 @@
+{
+  "name": "animation-example",
+  "version": "1.0.0",
+  "license": "MIT",
+  "idyll": {
+    "theme": "github",
+    "layout": "centered",
+    "css": "styles.css",
+    "authorView": false,
+    "context": "./context.js"
+  },
+  "dependencies": {
+    "d3": "^4.0.0",
+    "idyll": "^3.12.2",
+    "idyll-d3-component": "^2.0.0",
+    "tween.js": "^16.6.0"
+  },
+  "devDependencies": {
+    "gh-pages": "^0.12.0"
+  }
+}
